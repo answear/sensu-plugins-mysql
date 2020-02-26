@@ -61,6 +61,11 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
          short: '-p',
          long: '--password=VALUE',
          description: 'Database password'
+  
+  option :channel,
+         short: '-C',
+         long: '--channel=VALUE',
+         description: 'Channel to use'
 
   option :master_connection,
          short: '-m',
@@ -123,6 +128,7 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
     end
     db_host = config[:host]
     db_conn = config[:master_connection]
+    db_channel = config[:channel]
 
     if [db_host, db_user, db_pass].any?(&:nil?)
       unknown 'Must specify host, user, password'
@@ -132,9 +138,9 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
       db = Mysql.new(db_host, db_user, db_pass, nil, config[:port], config[:socket])
 
       results = if db_conn.nil?
-                  db.query 'SHOW SLAVE STATUS'
+                  db.query "SHOW SLAVE STATUS FOR CHANNEL '#{db_channel}'"
                 else
-                  db.query "SHOW SLAVE '#{db_conn}' STATUS"
+                  db.query "SHOW SLAVE '#{db_conn}' STATUS FOR CHANNEL '#{db_channel}'"
                 end
 
       unless results.nil?
