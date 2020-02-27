@@ -172,7 +172,7 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
           elsif replication_delay >= config[:crit]
             critical message
           elsif db_conn.nil?
-            ok "slave running: #{slave_running}, #{message}"
+            ok "slave running: #{slave_running} on #{db_channel}, #{message}"
           else
             ok "master connection: #{db_conn}, slave running: #{slave_running}, #{message}"
           end
