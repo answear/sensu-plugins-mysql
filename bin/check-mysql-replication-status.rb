@@ -181,9 +181,9 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
             critical message
           elsif db_conn.nil?
               if slave_channel.nil?
-                ok "slave running: #{slave_running} on #{slave_channel}, #{message}"
-              else
                 ok "slave running: #{slave_running}, #{message}"
+              else
+                ok "slave running: #{slave_running} on #{slave_channel}, #{message}"
               end  
           else
             ok "master connection: #{db_conn}, slave running: #{slave_running}, #{message}"
