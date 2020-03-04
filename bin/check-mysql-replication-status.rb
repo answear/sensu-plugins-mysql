@@ -61,6 +61,11 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
          short: '-p',
          long: '--password=VALUE',
          description: 'Database password'
+  
+  option :channel,
+         short: '-C',
+         long: '--channel=VALUE',
+         description: 'Channel to use'
 
   option :master_connection,
          short: '-m',
@@ -123,6 +128,7 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
     end
     db_host = config[:host]
     db_conn = config[:master_connection]
+    slave_channel = config[:channel]
 
     if [db_host, db_user, db_pass].any?(&:nil?)
       unknown 'Must specify host, user, password'
@@ -132,9 +138,17 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
       db = Mysql.new(db_host, db_user, db_pass, nil, config[:port], config[:socket])
 
       results = if db_conn.nil?
-                  db.query 'SHOW SLAVE STATUS'
+                  if slave_channel.nil?
+                    db.query 'SHOW SLAVE STATUS'
+                  else
+                    db.query "SHOW SLAVE STATUS FOR CHANNEL '#{slave_channel}'"
+                  end
                 else
-                  db.query "SHOW SLAVE '#{db_conn}' STATUS"
+                  if slave_channel.nil?
+                    db.query "SHOW SLAVE '#{db_conn}' STATUS"
+                  else
+                    db.query "SHOW SLAVE '#{db_conn}' STATUS FOR CHANNEL '#{slave_channel}'"
+                  end
                 end
 
       unless results.nil?
@@ -166,7 +180,11 @@ class CheckMysqlReplicationStatus < Sensu::Plugin::Check::CLI
           elsif replication_delay >= config[:crit]
             critical message
           elsif db_conn.nil?
-            ok "slave running: #{slave_running}, #{message}"
+              if slave_channel.nil?
+                ok "slave running: #{slave_running}, #{message}"
+              else
+                ok "slave running: #{slave_running} on #{slave_channel}, #{message}"
+              end  
           else
             ok "master connection: #{db_conn}, slave running: #{slave_running}, #{message}"
           end
